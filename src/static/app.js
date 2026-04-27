@@ -34,6 +34,8 @@ document.addEventListener("DOMContentLoaded", () => {
     technology: { label: "Technology", color: "#e8eaf6", textColor: "#3949ab" },
   };
 
+  const SCHOOL_NAME = "Mergington High School";
+
   // State for activities and filters
   let allActivities = {};
   let currentFilter = "all";
@@ -569,6 +571,22 @@ document.addEventListener("DOMContentLoaded", () => {
         `
         }
       </div>
+      <div class="share-section">
+        <button class="share-button" aria-label="Share this activity">
+          📤 Share
+        </button>
+        <div class="share-popover hidden">
+          <a class="share-option share-whatsapp" target="_blank" rel="noopener noreferrer" aria-label="Share on WhatsApp">
+            <span class="share-icon">💬</span> WhatsApp
+          </a>
+          <a class="share-option share-email" aria-label="Share via Email">
+            <span class="share-icon">✉️</span> Email
+          </a>
+          <button class="share-option share-copy" aria-label="Copy link">
+            <span class="share-icon">🔗</span> Copy Link
+          </button>
+        </div>
+      </div>
     `;
 
     // Add click handlers for delete buttons
@@ -587,8 +605,67 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     }
 
+    // Social sharing
+    const shareText = `Check out "${name}" at ${SCHOOL_NAME}!\n${details.description}\nSchedule: ${formattedSchedule}`;
+    const shareUrl = window.location.href;
+
+    const shareButton = activityCard.querySelector(".share-button");
+    const sharePopover = activityCard.querySelector(".share-popover");
+    const whatsappLink = activityCard.querySelector(".share-whatsapp");
+    const emailLink = activityCard.querySelector(".share-email");
+    const copyButton = activityCard.querySelector(".share-copy");
+
+    // Set WhatsApp and email href values
+    whatsappLink.href = `https://wa.me/?text=${encodeURIComponent(shareText + "\n" + shareUrl)}`;
+    emailLink.href = `mailto:?subject=${encodeURIComponent("Check out: " + name)}&body=${encodeURIComponent(shareText + "\n\n" + shareUrl)}`;
+
+    shareButton.addEventListener("click", (event) => {
+      event.stopPropagation();
+      // Use native share API if available (mobile devices)
+      if (navigator.share) {
+        navigator.share({
+          title: name,
+          text: shareText,
+          url: shareUrl,
+        }).catch(() => {});
+      } else {
+        // Toggle share popover for desktop
+        const isHidden = sharePopover.classList.contains("hidden");
+        // Close all other open popovers first
+        document.querySelectorAll(".share-popover:not(.hidden)").forEach((p) => {
+          p.classList.add("hidden");
+        });
+        if (isHidden) {
+          sharePopover.classList.remove("hidden");
+        }
+      }
+    });
+
+    sharePopover.addEventListener("click", (event) => {
+      event.stopPropagation();
+    });
+
+    copyButton.addEventListener("click", () => {
+      navigator.clipboard.writeText(shareUrl).then(() => {
+        copyButton.textContent = "✅ Copied!";
+        setTimeout(() => {
+          copyButton.innerHTML = '<span class="share-icon">🔗</span> Copy Link';
+        }, 2000);
+      }).catch(() => {
+        copyButton.textContent = "Unable to copy link";
+      });
+      sharePopover.classList.add("hidden");
+    });
+
     activitiesList.appendChild(activityCard);
   }
+
+  // Close share popovers when clicking outside
+  document.addEventListener("click", () => {
+    document.querySelectorAll(".share-popover:not(.hidden)").forEach((p) => {
+      p.classList.add("hidden");
+    });
+  });
 
   // Event listeners for search and filter
   searchInput.addEventListener("input", (event) => {
